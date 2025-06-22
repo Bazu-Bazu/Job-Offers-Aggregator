@@ -1,27 +1,43 @@
 package com.example.Job.Offers.Aggregator.controller;
 
+import com.example.Job.Offers.Aggregator.model.User;
+import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
+    private final UserRepository userRepository;
     @Value("${telegram.bot.name}")
     private String botName;
     @Value("${telegram.bot.token}")
     private String botToken;
 
+    public TelegramBotController(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String text = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
 
             if (text.equals("/start")) {
+                User user = userRepository.findByTelegramId(chatId)
+                        .orElseGet(() -> {
+                            User newUser = new User();
+                            newUser.setTelegramId(chatId);
+                            newUser.setUsername(update.getMessage().getFrom().getUserName());
+                            return userRepository.save(newUser);
+                        });
+
                 sendWelcomeMessage(update);
             }
         }
