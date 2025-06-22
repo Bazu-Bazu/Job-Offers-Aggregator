@@ -9,15 +9,16 @@ public class Subscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
     @Column(name = "search_query")
-    private String searchQuery;
+    private String query;
 
-    public Subscription(Long id, Long userId, String searchQuery) {
+    public Subscription(Long id, User user, String query) {
         this.id = id;
-        this.userId = userId;
-        this.searchQuery = searchQuery;
+        this.user = user;
+        this.query = query;
     }
 
     public Subscription() { }
@@ -30,20 +31,18 @@ public class Subscription {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) { this.user = user; }
+
+    public String getQuery() {
+        return query;
     }
 
-    public String getSearchQuery() {
-        return searchQuery;
-    }
-
-    public void setSearchQuery(String searchQuery) {
-        this.searchQuery = searchQuery;
+    public void setQuery(String query) {
+        this.query = query;
     }
 
 }
