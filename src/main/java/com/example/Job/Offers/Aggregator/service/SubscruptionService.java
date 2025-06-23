@@ -20,7 +20,7 @@ public class SubscruptionService {
         this.userRepository = userRepository;
     }
 
-    public void subscribe(Long telegramId, String query) {
+    public boolean subscribe(Long telegramId, String query) {
         User user = userRepository.findByTelegramId(telegramId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -29,7 +29,10 @@ public class SubscruptionService {
             subscription.setUser(user);
             subscription.setQuery(query);
             subscriptionRepository.save(subscription);
+            return true;
         }
+
+        return false;
     }
 
     public void unsubscribe(Long telegramId, String query) {
