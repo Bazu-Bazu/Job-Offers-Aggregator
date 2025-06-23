@@ -5,21 +5,23 @@ import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 
 @Service
-public class SubscruptionService {
+public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
 
-    public SubscruptionService(SubscriptionRepository subscriptionRepository, UserRepository userRepository) {
+    public SubscriptionService(SubscriptionRepository subscriptionRepository, UserRepository userRepository) {
         this.subscriptionRepository = subscriptionRepository;
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public boolean subscribe(Long telegramId, String query) {
         User user = userRepository.findByTelegramId(telegramId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -35,13 +37,20 @@ public class SubscruptionService {
         return false;
     }
 
-    public void unsubscribe(Long telegramId, String query) {
+    @Transactional
+    public boolean unsubscribe(Long telegramId, String query) {
         User user = userRepository.findByTelegramId(telegramId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        subscriptionRepository.deleteByUserAndQuery(user, query);
+        if (subscriptionRepository.findByUserAndQuery(user, query).isPresent()) {
+            subscriptionRepository.deleteByUserIdAndQuery(user.getId(), query);
+            return true;
+        }
+
+        return false;
     }
 
+    @Transactional
     public List<String> getUserSubscriptions(Long telegramId) {
         User user = userRepository.findByTelegramId(telegramId).orElse(null);
 

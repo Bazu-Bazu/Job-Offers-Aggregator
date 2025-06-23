@@ -2,7 +2,7 @@ package com.example.Job.Offers.Aggregator.controller;
 
 import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
-import com.example.Job.Offers.Aggregator.service.SubscruptionService;
+import com.example.Job.Offers.Aggregator.service.SubscriptionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -16,14 +16,14 @@ import java.util.List;
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
-    private final SubscruptionService subscruptionService;
+    private final SubscriptionService subscruptionService;
     private final UserRepository userRepository;
     @Value("${telegram.bot.name}")
     private String botName;
     @Value("${telegram.bot.token}")
     private String botToken;
 
-    public TelegramBotController(SubscruptionService subscruptionService, UserRepository userRepository) {
+    public TelegramBotController(SubscriptionService subscruptionService, UserRepository userRepository) {
         this.subscruptionService = subscruptionService;
         this.userRepository = userRepository;
     }
@@ -53,6 +53,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
             else if (text.equals("/list")) {
                 handleListCommand(chatId, telegramUser.getId());
+            }
+
+            else if (text.startsWith("/unsubscribe")) {
+                handleUnsubscribeCommand(chatId, telegramUser, text);
             }
         }
     }
@@ -100,10 +104,12 @@ public class TelegramBotController extends TelegramLongPollingBot {
             String query = command.substring("/subscribe".length()).trim();
 
             if (query.isEmpty()) {
-                sendMessage(chatId, """
+                String message = """
                         ❗Укажите запрос для подписки.
                         Например: /subscribe Java developer.
-                        """);
+                        """;
+
+                sendMessage(chatId, message);
 
                 return;
             }
@@ -116,14 +122,14 @@ public class TelegramBotController extends TelegramLongPollingBot {
                         """, query);
 
                 sendMessage(chatId, message);
-            }
-            else {
-                String message = """
-                        ❗Вы уже подписаны на эту вакансию.
-                        Укажите другой запрос для подписки.""";
 
-                sendMessage(chatId, message);
+                return;
             }
+            String message = """
+                    ❗Вы уже подписаны на эту вакансию.
+                    Укажите другой запрос для подписки.""";
+
+            sendMessage(chatId, message);
         } catch (Exception e) {
             sendMessage(chatId, "‼\uFE0FОшибка при обработке подписки. Попробуйте позже.");
         }
@@ -148,6 +154,40 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         response.append("\nДля отписки используйте /unsubscribe <запрос>");
         sendMessage(chatId, response.toString());
+    }
+
+    private void handleUnsubscribeCommand(Long chatId, org.telegram.telegrambots.meta.api.objects.User telegramUser,
+                                          String command) {
+        try {
+            String query = command.substring("/unsubscribe".length()).trim();
+
+            if (query.isEmpty()) {
+                String message = """
+                        ❗Укажите запрос для отписки.
+                        Например /unsubscribe Golang developer.
+                        """;
+
+                sendMessage(chatId, message);
+
+                return;
+            }
+
+            if (subscruptionService.unsubscribe(telegramUser.getId(), query)) {
+                String message = String.format("""
+                    ✅Вы успешно отписались от вакансии по запросу:
+                    *%s*
+                    """, query);
+
+                sendMessage(chatId, message);
+
+                return;
+            }
+
+            sendMessage(chatId, "❗Такой подписки не существует");
+
+        } catch (Exception e) {
+            sendMessage(chatId, "‼\uFE0FОшибка при обработке отписки. Попробуйте позже.");
+        }
     }
 
 }
