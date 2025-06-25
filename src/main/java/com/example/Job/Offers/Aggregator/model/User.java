@@ -2,6 +2,7 @@ package com.example.Job.Offers.Aggregator.model;
 
 import javax.persistence.*;
 
+
 @Entity
 @Table(name = "users")
 public class User {
