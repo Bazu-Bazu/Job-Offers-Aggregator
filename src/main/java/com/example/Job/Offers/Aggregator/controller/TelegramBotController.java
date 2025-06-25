@@ -16,15 +16,15 @@ import java.util.List;
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
-    private final SubscriptionService subscruptionService;
+    private final SubscriptionService subscriptionService;
     private final UserRepository userRepository;
     @Value("${telegram.bot.name}")
     private String botName;
     @Value("${telegram.bot.token}")
     private String botToken;
 
-    public TelegramBotController(SubscriptionService subscruptionService, UserRepository userRepository) {
-        this.subscruptionService = subscruptionService;
+    public TelegramBotController(SubscriptionService subscriptionService, UserRepository userRepository) {
+        this.subscriptionService = subscriptionService;
         this.userRepository = userRepository;
     }
 
@@ -114,7 +114,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 return;
             }
 
-            if (subscruptionService.subscribe(telegramUser.getId(), query)) {
+            if (subscriptionService.subscribe(telegramUser.getId(), query)) {
 
                 String message = String.format("""
                         ✅Вы успешно подписались на вакансию по запросу:
@@ -136,7 +136,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleListCommand(Long chatId, Long userId) {
-        List<String> subscriptions = subscruptionService.getUserSubscriptions(userId);
+        List<String> subscriptions = subscriptionService.getUserSubscriptions(userId);
 
         if (subscriptions.isEmpty()) {
             String message = "😔У вас пока нет активных подписок.";
@@ -172,10 +172,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 return;
             }
 
-            if (subscruptionService.unsubscribe(telegramUser.getId(), query)) {
+            if (subscriptionService.unsubscribe(telegramUser.getId(), query)) {
                 String message = String.format("""
                     ✅Вы успешно отписались от вакансии по запросу:
-                    *%s*
+                    *%s*.
                     """, query);
 
                 sendMessage(chatId, message);
@@ -183,7 +183,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 return;
             }
 
-            sendMessage(chatId, "❗Такой подписки не существует");
+            sendMessage(chatId, "❗У вас нет такой подписки.");
 
         } catch (Exception e) {
             sendMessage(chatId, "‼\uFE0FОшибка при обработке отписки. Попробуйте позже.");
