@@ -13,5 +13,6 @@ public interface VacancyRepository extends JpaRepository<Vacancy, Long> {
     Optional<Vacancy> findByExternalId(String externalId);
     @Query(value = "SELECT * FROM vacancies WHERE user_id = :userId ORDER BY published_at DESC", nativeQuery = true)
     List<Vacancy> findByUserId(Long userId);
+    boolean existsByExternalId(String externalId);
 
 }

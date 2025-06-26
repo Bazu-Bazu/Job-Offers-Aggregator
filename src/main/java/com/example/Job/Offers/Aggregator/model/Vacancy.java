@@ -3,6 +3,7 @@ package com.example.Job.Offers.Aggregator.model;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -19,13 +20,13 @@ public class Vacancy {
     private String salary;
     private String link;
     @Column(name = "published_at")
-    private LocalDate publishedAt;
+    private LocalDateTime publishedAt;
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     public Vacancy(Long id, String externalId, String title, String company, String salary,
-                   String link, LocalDate publishedAt, User user) {
+                   String link, LocalDateTime publishedAt, User user) {
         this.id = id;
         this.externalId = externalId;
         this.title = title;
@@ -86,11 +87,11 @@ public class Vacancy {
         this.link = link;
     }
 
-    public LocalDate getPublishedAt() {
+    public LocalDateTime getPublishedAt() {
         return publishedAt;
     }
 
-    public void setPublishedAt(LocalDate publishedAt) {
+    public void setPublishedAt(LocalDateTime publishedAt) {
         this.publishedAt = publishedAt;
     }
 
