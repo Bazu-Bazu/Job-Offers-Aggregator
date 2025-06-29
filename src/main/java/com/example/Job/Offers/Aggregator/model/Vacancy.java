@@ -2,7 +2,6 @@ package com.example.Job.Offers.Aggregator.model;
 
 
 import javax.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
@@ -13,7 +12,7 @@ public class Vacancy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "external_id")
+    @Column(name = "external_id", unique = true)
     private String externalId;
     private String title;
     private String company;

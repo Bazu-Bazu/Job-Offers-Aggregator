@@ -4,6 +4,7 @@ import com.example.Job.Offers.Aggregator.model.Subscription;
 import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import java.util.List;
 
 
 @Service
+@Slf4j
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
@@ -24,45 +26,60 @@ public class SubscriptionService {
 
     @Transactional
     public boolean subscribe(Long telegramId, String query) {
-        User user = userRepository.findByTelegramId(telegramId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            User user = userRepository.findByTelegramId(telegramId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (subscriptionRepository.findByUserAndQuery(user, query).isEmpty()) {
-            Subscription subscription = new Subscription();
-            subscription.setUser(user);
-            subscription.setQuery(query);
-            subscriptionRepository.save(subscription);
-            return true;
+            if (subscriptionRepository.findByUserAndQuery(user, query).isEmpty()) {
+                Subscription subscription = new Subscription();
+                subscription.setUser(user);
+                subscription.setQuery(query);
+                subscriptionRepository.save(subscription);
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            log.error("Failed to subscribe user {} to query '{}'", telegramId, query, e);
+            throw new RuntimeException("Subscription failed", e);
         }
-
-        return false;
     }
 
     @Transactional
     public boolean unsubscribe(Long telegramId, String query) {
-        User user = userRepository.findByTelegramId(telegramId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            User user = userRepository.findByTelegramId(telegramId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (subscriptionRepository.findByUserAndQuery(user, query).isPresent()) {
-            subscriptionRepository.deleteByUserIdAndQuery(user.getId(), query);
-            return true;
+            if (subscriptionRepository.findByUserAndQuery(user, query).isPresent()) {
+                subscriptionRepository.deleteByUserIdAndQuery(user.getId(), query);
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            log.error("Failed to unsubscribe user {} from query '{}'", telegramId, query, e);
+            throw new RuntimeException("Unsubscription failed", e);
         }
-
-        return false;
     }
 
     @Transactional
     public List<String> getUserSubscriptions(Long telegramId) {
-        User user = userRepository.findByTelegramId(telegramId).orElse(null);
+        try {
+            User user = userRepository.findByTelegramId(telegramId).orElse(null);
 
-        if (user == null) {
-            return Collections.emptyList();
+            if (user == null) {
+                return Collections.emptyList();
+            }
+
+            return subscriptionRepository.findByUser(user)
+                    .stream()
+                    .map(Subscription::getQuery)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Failed to get subscriptions for user {}", telegramId, e);
+            throw new RuntimeException("Failed to get subscriptions", e);
         }
-
-        return subscriptionRepository.findByUser(user)
-                .stream()
-                .map(Subscription::getQuery)
-                .toList();
     }
 
 }

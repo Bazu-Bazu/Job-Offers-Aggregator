@@ -2,6 +2,7 @@ package com.example.Job.Offers.Aggregator.controller;
 
 import com.example.Job.Offers.Aggregator.api.MessageInterface;
 import com.example.Job.Offers.Aggregator.service.TelegramCommandService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -18,6 +19,7 @@ import java.util.List;
 
 
 @Component
+@Slf4j
 public class TelegramBotController extends TelegramLongPollingBot implements MessageInterface {
 
     private final TelegramCommandService telegramCommandService;
@@ -33,7 +35,11 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
 
     @Override
     public void onUpdateReceived(Update update) {
-        telegramCommandService.handleUpdate(update);
+        try {
+            telegramCommandService.handleUpdate(update);
+        } catch (Exception e) {
+            log.error("Error processing update: {}", update, e);
+        }
     }
 
     @Override
@@ -55,7 +61,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Failed to send message to chat {} : {}", chatId, text, e);
         }
     }
 
@@ -71,7 +77,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
 
             execute(new SetMyCommands(commands, null, null));
         } catch (TelegramApiException e) {
-            System.out.println();
+            log.error("Failed to initialized bot commands", e);
         }
     }
 

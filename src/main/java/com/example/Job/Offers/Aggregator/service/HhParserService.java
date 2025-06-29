@@ -3,6 +3,7 @@ package com.example.Job.Offers.Aggregator.service;
 import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.model.Vacancy;
 import com.example.Job.Offers.Aggregator.repository.VacancyRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -10,6 +11,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.lang.reflect.Executable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 
 
 @Service
+@Slf4j
 public class HhParserService {
 
     private final WebClient webClient;
@@ -30,39 +33,60 @@ public class HhParserService {
     public HhParserService(WebClient.Builder webClientBuilder, VacancyRepository vacancyRepository) {
         this.webClient = webClientBuilder.baseUrl("https://api.example.com").build();
         this.vacancyRepository = vacancyRepository;
+        log.info("HhParserService initialized");
     }
 
     public void parseAndSaveVacancies(String query, String area, User user) {
-        String url = buildUrl(query, area);
-        String html = fetchHtml(url);
-        List<Vacancy> vacancies = parseHtml(html, user);
-        saveUniqueVacancies(vacancies);
+        try {
+            String url = buildUrl(query, area);
+            String html = fetchHtml(url);
+            List<Vacancy> vacancies = parseHtml(html, user);
+            saveUniqueVacancies(vacancies);
+        } catch (Exception e) {
+            log.error("Error parsing vacancies for query '{}' in area {}", query, area, e);
+            throw new RuntimeException("Failed to parse vacancies", e);
+        }
     }
 
     private String buildUrl(String query, String area) {
-        return String.format("%s/search/vacancy?text=%s&area=%s",
-                hh_url,
-                URLEncoder.encode(query, StandardCharsets.UTF_8),
-                area);
+        try {
+            return String.format("%s/search/vacancy?text=%s&area=%s",
+                    hh_url,
+                    URLEncoder.encode(query, StandardCharsets.UTF_8),
+                    area);
+        } catch (Exception e) {
+            log.error("Error building URL for query: '{}' in area {}", query, area, e);
+            throw new RuntimeException("Failed to build URL", e);
+        }
     }
 
     private String fetchHtml(String url) {
-        return webClient.get()
-                .uri(url)
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        try {
+            return webClient.get()
+                    .uri(url)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Failed to fetch HTML from URL: {}", url, e);
+            throw new RuntimeException("Failed to fetch HTML", e);
+        }
     }
 
     private List<Vacancy> parseHtml(String html, User user) {
-        Document document = Jsoup.parse(html);
-        Elements items = document.select(".serp-item");
+        try {
+            Document document = Jsoup.parse(html);
+            Elements items = document.select(".serp-item");
 
-        return items.stream()
-                .map(item -> convertToVacancy(item, user))
-                .filter(Objects::nonNull)
-                .toList();
+            return items.stream()
+                    .map(item -> convertToVacancy(item, user))
+                    .filter(Objects::nonNull)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error parsing HTML content", e);
+            throw new RuntimeException("Failed to parse HTML", e);
+        }
     }
 
     private Vacancy convertToVacancy(Element item, User user) {
@@ -95,32 +119,48 @@ public class HhParserService {
 
             return vacancy;
         } catch (Exception e) {
-            return null;
+            log.warn("Failed to convert element to vacancy: {}", item, e);
+            throw new RuntimeException("Failed to convert element to vacancy", e);
         }
     }
 
     private String extractIdFromUrl(String url) {
-        Pattern pattern = Pattern.compile("vacancy/(\\d+)");
-        Matcher matcher = pattern.matcher(url);
-        return matcher.find() ? matcher.group(1) : String.valueOf(url.hashCode());
+        try {
+            Pattern pattern = Pattern.compile("vacancy/(\\d+)");
+            Matcher matcher = pattern.matcher(url);
+            return matcher.find() ? matcher.group(1) : String.valueOf(url.hashCode());
+        } catch (Exception e) {
+            log.warn("Failed to extract ID from URL: {}", url, e);
+            throw new RuntimeException("Failed to extract ID from URL");
+        }
     }
 
     private LocalDateTime parseDate(String dateText) {
-        if (dateText.contains("сегодня")) {
-            return LocalDate.now().atStartOfDay();
+        try {
+            if (dateText.contains("сегодня")) {
+                return LocalDate.now().atStartOfDay();
+            }
+            if (dateText.contains("вчера")) {
+                return LocalDateTime.now().minusDays(1).toLocalDate().atStartOfDay();
+            }
+            return LocalDateTime.now();
+        } catch (Exception e) {
+            log.warn("Failed to parse date text: {}", dateText, e);
+            throw new RuntimeException("Failed to parse date text");
         }
-        if (dateText.contains("вчера")) {
-            return LocalDateTime.now().minusDays(1).toLocalDate().atStartOfDay();
-        }
-        return LocalDateTime.now();
     }
 
     private void saveUniqueVacancies(List<Vacancy> vacancies) {
-        vacancies.forEach(vacancy -> {
-            if (!vacancyRepository.existsByExternalId(vacancy.getExternalId())) {
-                vacancyRepository.save(vacancy);
-            }
-        });
+        try {
+            vacancies.forEach(vacancy -> {
+                if (!vacancyRepository.existsByExternalId(vacancy.getExternalId())) {
+                    vacancyRepository.save(vacancy);
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to save vacancies", e);
+            throw new RuntimeException("Failed to save vacancies");
+        }
     }
 
 }
