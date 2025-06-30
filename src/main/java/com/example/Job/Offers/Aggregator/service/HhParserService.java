@@ -29,6 +29,7 @@ public class HhParserService {
     private final WebClient webClient;
     private final VacancyRepository vacancyRepository;
     private final String hh_url = "https://hh.ru";
+    private final String defaultArea = "1";
 
     public HhParserService(WebClient.Builder webClientBuilder, VacancyRepository vacancyRepository) {
         this.webClient = webClientBuilder.baseUrl("https://api.example.com").build();
@@ -36,26 +37,26 @@ public class HhParserService {
         log.info("HhParserService initialized");
     }
 
-    public void parseAndSaveVacancies(String query, String area, User user) {
+    public void parseAndSaveVacancies(String query, User user) {
         try {
-            String url = buildUrl(query, area);
+            String url = buildUrl(query);
             String html = fetchHtml(url);
             List<Vacancy> vacancies = parseHtml(html, user);
             saveUniqueVacancies(vacancies);
         } catch (Exception e) {
-            log.error("Error parsing vacancies for query '{}' in area {}", query, area, e);
+            log.error("Error parsing vacancies for query '{}'", query, e);
             throw new RuntimeException("Failed to parse vacancies", e);
         }
     }
 
-    private String buildUrl(String query, String area) {
+    private String buildUrl(String query) {
         try {
             return String.format("%s/search/vacancy?text=%s&area=%s",
                     hh_url,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
-                    area);
+                    defaultArea);
         } catch (Exception e) {
-            log.error("Error building URL for query: '{}' in area {}", query, area, e);
+            log.error("Error building URL for query: '{}", query, e);
             throw new RuntimeException("Failed to build URL", e);
         }
     }
