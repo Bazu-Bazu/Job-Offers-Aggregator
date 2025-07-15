@@ -18,13 +18,15 @@ public class TelegramCommandService {
     private final MessageInterface messageInterface;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final VacancyService vacancyService;
 
     @Autowired
     public TelegramCommandService(MessageInterface messageInterface, UserRepository userRepository,
-                                  SubscriptionService subscriptionService) {
+                                  SubscriptionService subscriptionService, VacancyService vacancyService) {
         this.messageInterface = messageInterface;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
+        this.vacancyService = vacancyService;
     }
 
     public void handleUpdate(Update update) {
@@ -101,6 +103,8 @@ public class TelegramCommandService {
                         """, query);
 
                 messageInterface.sendMessage(chatId, message);
+
+                vacancyService.processVacancySearch(chatId, query);
 
                 return;
             }
