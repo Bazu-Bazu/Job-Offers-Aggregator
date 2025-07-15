@@ -1,6 +1,8 @@
 package com.example.Job.Offers.Aggregator.service;
 
+import com.example.Job.Offers.Aggregator.api.HhApiClient;
 import com.example.Job.Offers.Aggregator.api.MessageInterface;
+import com.example.Job.Offers.Aggregator.model.Vacancy;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +20,15 @@ public class TelegramCommandService {
     private final MessageInterface messageInterface;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
-    private final VacancyService vacancyService;
+    private final HhApiClient hhApiClient;
 
     @Autowired
     public TelegramCommandService(MessageInterface messageInterface, UserRepository userRepository,
-                                  SubscriptionService subscriptionService, VacancyService vacancyService) {
+                                  SubscriptionService subscriptionService, HhApiClient hhApiClient) {
         this.messageInterface = messageInterface;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
-        this.vacancyService = vacancyService;
+        this.hhApiClient = hhApiClient;
     }
 
     public void handleUpdate(Update update) {
@@ -104,7 +106,7 @@ public class TelegramCommandService {
 
                 messageInterface.sendMessage(chatId, message);
 
-                vacancyService.processVacancySearch(chatId, query);
+                searchVacancy(chatId, query);
 
                 return;
             }
@@ -116,6 +118,20 @@ public class TelegramCommandService {
         } catch (Exception e) {
             log.error("Error handling /subscribe command for chatId {}", chatId, e);
             throw new RuntimeException("Error handling /subscribe command", e);
+        }
+    }
+
+    private void searchVacancy(Long chatId, String query) {
+        String area = "1";
+
+        List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
+        if (vacancies.isEmpty()) {
+            messageInterface.sendMessage(chatId, "По вашему запросу ничего не найдено.");
+        }
+        else {
+            vacancies.stream()
+                    .limit(5)
+                    .forEach(vacancy -> messageInterface.sendMessage(chatId, vacancy.toMessage()));
         }
     }
 

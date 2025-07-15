@@ -16,22 +16,26 @@ public class Vacancy {
     private String externalId;
     private String title;
     private String company;
+    private String url;
     private String salary;
     private String link;
+    private String employer;
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    public Vacancy(Long id, String externalId, String title, String company, String salary,
-                   String link, LocalDateTime publishedAt, User user) {
+    public Vacancy(Long id, String externalId, String title, String company, String url, String salary,
+                   String link, String employer, LocalDateTime publishedAt, User user) {
         this.id = id;
         this.externalId = externalId;
         this.title = title;
         this.company = company;
+        this.url = url;
         this.salary = salary;
         this.link = link;
+        this.employer = employer;
         this.publishedAt = publishedAt;
         this.user = user;
     }
@@ -100,6 +104,27 @@ public class Vacancy {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getEmployer() {
+        return employer;
+    }
+
+    public void setEmployer(String employer) {
+        this.employer = employer;
+    }
+
+    public String toMessage() {
+        return String.format("*%s*\nКомпания: %s\nЗарплата: %s\n[Ссылка на вакансию](%s)",
+                title, employer, salary, url);
     }
 
 }

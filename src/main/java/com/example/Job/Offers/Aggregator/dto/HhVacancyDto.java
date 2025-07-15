@@ -1,33 +1,42 @@
 package com.example.Job.Offers.Aggregator.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HhVacancyDto {
 
-    private final String id;
-    private final String name;
-    private final String salary;
-    private final String employer;
+    @JsonProperty("alternate_url")
+    private String url;
+    private String name;
+    private HhSalaryDto salary;
+    private HhEmployerDto employer;
 
-    public HhVacancyDto(String id, String name, String salary, String employer) {
-        this.id = id;
+    public HhVacancyDto(String url, String name, HhSalaryDto salary, HhEmployerDto employer) {
+        this.url = url;
         this.name = name;
         this.salary = salary;
         this.employer = employer;
     }
 
-    public String getId() {
-        return id;
+    public HhVacancyDto() {}
+
+    public String getUrl() {
+        return url;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getSalary() {
+    public HhSalaryDto getSalary() {
         return salary;
     }
 
-    public String getEmployer() {
+    public HhEmployerDto getEmployer() {
         return employer;
     }
 
