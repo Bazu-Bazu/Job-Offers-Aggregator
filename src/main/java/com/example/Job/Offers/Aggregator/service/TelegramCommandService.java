@@ -62,7 +62,8 @@ public class TelegramCommandService {
     private void handleStartCommand(Long chatId, User telegramUser) {
         try {
             userRepository.findByTelegramId(chatId).orElseGet(() -> {
-                com.example.Job.Offers.Aggregator.model.User newUser = new com.example.Job.Offers.Aggregator.model.User();
+                com.example.Job.Offers.Aggregator.model.User newUser =
+                        new com.example.Job.Offers.Aggregator.model.User();
                 newUser.setTelegramId(chatId);
                 newUser.setUsername(telegramUser.getUserName());
                 return userRepository.save(newUser);
@@ -129,7 +130,7 @@ public class TelegramCommandService {
 
         List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
         if (vacancies.isEmpty()) {
-            messageInterface.sendMessage(chatId, "По вашему запросу ничего не найдено.");
+            messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
         }
         else {
             vacancies.stream()
@@ -215,4 +216,5 @@ public class TelegramCommandService {
             throw new RuntimeException("Error handling /unsubscribeAll command", e);
         }
     }
+
 }

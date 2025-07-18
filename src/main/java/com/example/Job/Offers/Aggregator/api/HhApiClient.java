@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ public class HhApiClient {
                 .queryParam("employer_type", "company")
                 .queryParam("only_with_salary", true)
                 .build()
+                .encode(StandardCharsets.UTF_8)
                 .toUri();
 
         ResponseEntity<HhResponseDto> response = restTemplate.exchange(
