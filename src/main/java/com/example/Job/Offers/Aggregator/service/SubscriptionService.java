@@ -64,6 +64,24 @@ public class SubscriptionService {
     }
 
     @Transactional
+    public boolean unsubscribeAll(Long telegramId) {
+        try {
+            User user = userRepository.findByTelegramId(telegramId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!subscriptionRepository.findByUser(user).isEmpty()) {
+                subscriptionRepository.deleteByUserId(user.getId());
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            log.error("Failed to unsubscribeAll user {}", telegramId, e);
+            throw new RuntimeException("UnsubscriptionAll failed", e);
+        }
+    }
+
+    @Transactional
     public List<String> getUserSubscriptions(Long telegramId) {
         try {
             User user = userRepository.findByTelegramId(telegramId).orElse(null);

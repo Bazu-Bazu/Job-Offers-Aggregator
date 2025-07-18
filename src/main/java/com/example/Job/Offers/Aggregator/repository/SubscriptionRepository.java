@@ -17,5 +17,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     @Modifying
     @Query(value = "DELETE FROM subscriptions WHERE user_id = :userId AND search_query = :query", nativeQuery = true)
     void deleteByUserIdAndQuery(Long userId, String query);
+    @Modifying
+    @Query(value = "DELETE FROM subscriptions WHERE user_id = :userId", nativeQuery = true)
+    void deleteByUserId(Long userId);
 
 }

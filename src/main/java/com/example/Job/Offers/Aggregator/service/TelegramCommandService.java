@@ -44,6 +44,8 @@ public class TelegramCommandService {
                     handleSubscribeCommand(chatId, telegramUser, text);
                 } else if (text.equals("/list")) {
                     handleListCommand(chatId, telegramUser.getId());
+                } else if (text.equals("/unsubscribe_all")) {
+                    handleUnsubscribeAllCommand(chatId, telegramUser);
                 } else if (text.startsWith("/unsubscribe")) {
                     handleUnsubscribeCommand(chatId, telegramUser, text);
                 }
@@ -71,6 +73,7 @@ public class TelegramCommandService {
                     
                     /subscribe <запрос> - Подписаться на вакансии
                     /unsubscribe <запрос> - Отписаться от вакансии
+                    /unsubscribe_all - Отписаться от всех вакансий
                     /list - Показать мои подписки
                     """, telegramUser.getUserName());
 
@@ -153,7 +156,8 @@ public class TelegramCommandService {
                 i++;
             }
 
-            response.append("\nДля отписки используйте /unsubscribe <запрос>");
+            response.append("\nДля отписки от конкретной вакансии используйте /unsubscribe <запрос>\n");
+            response.append("\nДля отписки от всех вакансий используйте /unsubscribe_all");
             messageInterface.sendMessage(chatId, response.toString());
         } catch (Exception e) {
             log.error("Error handling /list command for chatId {}", chatId, e);
@@ -193,6 +197,22 @@ public class TelegramCommandService {
         } catch (Exception e) {
             log.error("Error handling /unsubscribe command for chatId {}", chatId, e);
             throw new RuntimeException("Error handling /unsubscribe command", e);
+        }
+    }
+
+    private void handleUnsubscribeAllCommand(Long chatId,
+                                             org.telegram.telegrambots.meta.api.objects.User telegramUser) {
+        try {
+            if (subscriptionService.unsubscribeAll(telegramUser.getId())) {
+                messageInterface.sendMessage(chatId, "✅Вы успешно отписались от всех вакансий.");
+
+                return;
+            }
+
+            messageInterface.sendMessage(chatId, "❗У вас нет подписок.");
+        } catch (Exception e) {
+            log.error("Error handling /unsubscribeAll command for chatId {}", chatId, e);
+            throw new RuntimeException("Error handling /unsubscribeAll command", e);
         }
     }
 }

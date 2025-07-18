@@ -12,8 +12,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,12 +38,13 @@ public class HhApiClient {
                 .path("/vacancies")
                 .queryParam("text", query)
                 .queryParam("area", area)
-                .queryParam("per_page", 20)
+                .queryParam("per_page", 10)
+                .queryParam("order_by", "publication_time")
+                .queryParam("period", 7)
+                .queryParam("employer_type", "company")
+                .queryParam("only_with_salary", true)
                 .build()
                 .toUri();
-
-//        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-//        String url = "https://api.hh.ru/vacancies?text=" + encodedQuery + "&area=1";
 
         ResponseEntity<HhResponseDto> response = restTemplate.exchange(
                 uri,

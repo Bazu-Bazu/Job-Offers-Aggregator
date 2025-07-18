@@ -72,6 +72,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
                     new BotCommand("/start", "Начало работы"),
                     new BotCommand("/subscribe", "Подписаться на вакансию"),
                     new BotCommand("/unsubscribe", "Отписаться от вакансии"),
+                    new BotCommand("/unsubscribe_all", "Отписаться от всех вакансий"),
                     new BotCommand("/list", "Список моих подписок")
             );
 
