@@ -13,8 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -39,11 +38,12 @@ public class HhApiClient {
                 .path("/vacancies")
                 .queryParam("text", query)
                 .queryParam("area", area)
-                .queryParam("per_page", 10)
+                .queryParam("per_page", 100)
                 .queryParam("order_by", "publication_time")
                 .queryParam("period", 7)
                 .queryParam("employer_type", "company")
                 .queryParam("only_with_salary", true)
+                .queryParam("premium", "true")
                 .build()
                 .encode(StandardCharsets.UTF_8)
                 .toUri();
@@ -53,16 +53,50 @@ public class HhApiClient {
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
                 HhResponseDto.class);
-        log.info(String.valueOf(response.getBody()));
+        log.info(String.valueOf(response    .getBody()));
 
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            return response.getBody().getItems().stream()
-                    .map(this::mapToVacancy)
-                    .collect(Collectors.toList());
+            return filterPopularVacancies(response.getBody().getItems(), query);
         }
 
         return Collections.emptyList();
 
+    }
+
+    private List<Vacancy> filterPopularVacancies(List<HhVacancyDto> items, String query) {
+        return items.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparing((HhVacancyDto v) ->
+                                Optional.ofNullable(v.getSalary())
+                                        .map(HhSalaryDto::getFrom)
+                                        .orElse(0),
+                                Comparator.reverseOrder())
+                        .thenComparing(v ->
+                                calculateRelevanceScore(v.getName(), query.toLowerCase()),
+                                Comparator.reverseOrder())
+                )
+                .limit(5)
+                .map(this::mapToVacancy)
+                .collect(Collectors.toList());
+    }
+
+    private int calculateRelevanceScore(String title, String query) {
+        if (title == null) {
+            return 0;
+        }
+
+        int score = 0;
+
+        if (title.toLowerCase().equals(query)) {
+            score += 100;
+        }
+
+        if (title.toLowerCase().startsWith(query)) {
+            score += 50;
+        }
+
+        return score;
     }
 
     private Vacancy mapToVacancy(HhVacancyDto item) {
