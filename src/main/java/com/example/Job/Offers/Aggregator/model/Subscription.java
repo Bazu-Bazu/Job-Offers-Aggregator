@@ -1,6 +1,8 @@
 package com.example.Job.Offers.Aggregator.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -10,16 +12,22 @@ public class Subscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
     @Column(name = "search_query")
     private String query;
 
-    public Subscription(Long id, User user, String query) {
+    @OneToMany(mappedBy = "subscription", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vacancy> vacancies = new ArrayList<>();
+
+    public Subscription(Long id, User user, String query, List<Vacancy> vacancies) {
         this.id = id;
         this.user = user;
         this.query = query;
+        this.vacancies = vacancies;
     }
 
     public Subscription() { }
@@ -44,6 +52,14 @@ public class Subscription {
 
     public void setQuery(String query) {
         this.query = query;
+    }
+
+    public List<Vacancy> getVacancies() {
+        return vacancies;
+    }
+
+    public void setVacancies(List<Vacancy> vacancies) {
+        this.vacancies = vacancies;
     }
 
 }

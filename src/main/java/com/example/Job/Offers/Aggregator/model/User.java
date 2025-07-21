@@ -1,6 +1,8 @@
 package com.example.Job.Offers.Aggregator.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -10,14 +12,20 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "telegram_id")
     private Long telegramId;
+
     private String username;
 
-    public User(Long id, Long telegramId, String username) {
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Subscription> subscriptions = new ArrayList<>();
+
+    public User(Long id, Long telegramId, String username, List<Subscription> subscriptions) {
         this.id = id;
         this.telegramId = telegramId;
         this.username = username;
+        this.subscriptions = subscriptions;
     }
 
     public User() { }
@@ -44,6 +52,14 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public List<Subscription> getSubscriptions() {
+        return subscriptions;
+    }
+
+    public void setSubscriptions(List<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
     }
 
 }

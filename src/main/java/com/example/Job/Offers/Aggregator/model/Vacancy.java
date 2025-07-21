@@ -3,6 +3,7 @@ package com.example.Job.Offers.Aggregator.model;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 
 @Entity
@@ -12,32 +13,43 @@ public class Vacancy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "external_id", unique = true)
     private String externalId;
+
+    @Column(nullable = false)
     private String title;
+
     private String company;
-    private String url;
     private String salary;
-    private String link;
     private String employer;
+
+    @Column(nullable = false)
+    private String url;
+
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private Subscription subscription;
+
     public Vacancy(Long id, String externalId, String title, String company, String url, String salary,
-                   String link, String employer, LocalDateTime publishedAt, User user) {
+                   String employer, LocalDateTime publishedAt, User user, Subscription subscription) {
         this.id = id;
         this.externalId = externalId;
         this.title = title;
         this.company = company;
         this.url = url;
         this.salary = salary;
-        this.link = link;
         this.employer = employer;
         this.publishedAt = publishedAt;
         this.user = user;
+        this.subscription = subscription;
     }
 
     public Vacancy() { }
@@ -82,14 +94,6 @@ public class Vacancy {
         this.salary = salary;
     }
 
-    public String getLink() {
-        return link;
-    }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
     public LocalDateTime getPublishedAt() {
         return publishedAt;
     }
@@ -120,6 +124,14 @@ public class Vacancy {
 
     public void setEmployer(String employer) {
         this.employer = employer;
+    }
+
+    public Subscription getSubscription() {
+        return subscription;
+    }
+
+    public void setSubscription(Subscription subscription) {
+        this.subscription = subscription;
     }
 
     public String toMessage() {
