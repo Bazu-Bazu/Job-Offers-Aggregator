@@ -14,7 +14,7 @@ public class Vacancy {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "external_id", unique = true)
+    @Column(name = "external_id", unique = true, nullable = false)
     private String externalId;
 
     @Column(nullable = false)

@@ -2,7 +2,9 @@ package com.example.Job.Offers.Aggregator.service;
 
 import com.example.Job.Offers.Aggregator.api.HhApiClient;
 import com.example.Job.Offers.Aggregator.api.MessageInterface;
+import com.example.Job.Offers.Aggregator.model.Subscription;
 import com.example.Job.Offers.Aggregator.model.Vacancy;
+import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +22,20 @@ public class TelegramCommandService {
     private final MessageInterface messageInterface;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final VacancyService vacancyService;
     private final HhApiClient hhApiClient;
+    private final SubscriptionRepository subscriptionRepository;
 
     @Autowired
     public TelegramCommandService(MessageInterface messageInterface, UserRepository userRepository,
-                                  SubscriptionService subscriptionService, HhApiClient hhApiClient) {
+                                  SubscriptionService subscriptionService, HhApiClient hhApiClient,
+                                  VacancyService vacancyService, SubscriptionRepository subscriptionRepository) {
         this.messageInterface = messageInterface;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
+        this.vacancyService = vacancyService;
         this.hhApiClient = hhApiClient;
+        this.subscriptionRepository = subscriptionRepository;
     }
 
     public void handleUpdate(Update update) {
@@ -128,12 +135,30 @@ public class TelegramCommandService {
     private void searchVacancy(Long chatId, String query) {
         String area = "1";
 
+        com.example.Job.Offers.Aggregator.model.User user = userRepository.findByTelegramId(chatId)
+                .orElseGet(() -> {
+                    com.example.Job.Offers.Aggregator.model.User newUser =
+                            new com.example.Job.Offers.Aggregator.model.User();
+                    newUser.setTelegramId(chatId);
+                    return userRepository.save(newUser);
+                });
+
+        Subscription subscription = subscriptionRepository.findByUserAndQuery(user, query)
+                .orElseGet(() -> {
+                    Subscription newSub = new Subscription();
+                    newSub.setUser(user);
+                    newSub.setQuery(query);
+                    return subscriptionRepository.save(newSub);
+                });
+
         List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
         if (vacancies.isEmpty()) {
             messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
         }
         else {
-            vacancies.stream()
+            List<Vacancy> savedVacancies = vacancyService.saveNewVacancies(vacancies, user, subscription);
+
+            savedVacancies.stream()
                     .limit(5)
                     .forEach(vacancy -> messageInterface.sendMessage(chatId, vacancy.toMessage()));
         }
