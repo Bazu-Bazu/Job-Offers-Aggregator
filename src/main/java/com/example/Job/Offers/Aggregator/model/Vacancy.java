@@ -20,7 +20,6 @@ public class Vacancy {
     @Column(nullable = false)
     private String title;
 
-    private String company;
     private String salary;
     private String employer;
 
@@ -38,12 +37,11 @@ public class Vacancy {
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 
-    public Vacancy(Long id, String externalId, String title, String company, String url, String salary,
+    public Vacancy(Long id, String externalId, String title, String url, String salary,
                    String employer, LocalDateTime publishedAt, User user, Subscription subscription) {
         this.id = id;
         this.externalId = externalId;
         this.title = title;
-        this.company = company;
         this.url = url;
         this.salary = salary;
         this.employer = employer;
@@ -76,14 +74,6 @@ public class Vacancy {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getCompany() {
-        return company;
-    }
-
-    public void setCompany(String company) {
-        this.company = company;
     }
 
     public String getSalary() {

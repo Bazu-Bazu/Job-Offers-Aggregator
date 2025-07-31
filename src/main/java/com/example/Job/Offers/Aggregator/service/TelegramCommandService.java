@@ -22,6 +22,7 @@ public class TelegramCommandService {
     private final MessageInterface messageInterface;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final UserService userService;
     private final VacancyService vacancyService;
     private final HhApiClient hhApiClient;
     private final SubscriptionRepository subscriptionRepository;
@@ -29,13 +30,15 @@ public class TelegramCommandService {
     @Autowired
     public TelegramCommandService(MessageInterface messageInterface, UserRepository userRepository,
                                   SubscriptionService subscriptionService, HhApiClient hhApiClient,
-                                  VacancyService vacancyService, SubscriptionRepository subscriptionRepository) {
+                                  VacancyService vacancyService, SubscriptionRepository subscriptionRepository,
+                                  UserService userService) {
         this.messageInterface = messageInterface;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
         this.vacancyService = vacancyService;
         this.hhApiClient = hhApiClient;
         this.subscriptionRepository = subscriptionRepository;
+        this.userService = userService;
     }
 
     public void handleUpdate(Update update) {
@@ -68,13 +71,8 @@ public class TelegramCommandService {
 
     private void handleStartCommand(Long chatId, User telegramUser) {
         try {
-            userRepository.findByTelegramId(chatId).orElseGet(() -> {
-                com.example.Job.Offers.Aggregator.model.User newUser =
-                        new com.example.Job.Offers.Aggregator.model.User();
-                newUser.setTelegramId(chatId);
-                newUser.setUsername(telegramUser.getUserName());
-                return userRepository.save(newUser);
-            });
+            userRepository.findByTelegramId(chatId)
+                    .orElseGet(() -> userService.saveNewUser(chatId, telegramUser));
 
             String welcomeText = String.format("""
                     😀Привет, %s! Я бот для поиска вакансий. Вот что я умею:
@@ -156,9 +154,9 @@ public class TelegramCommandService {
             messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
         }
         else {
-            List<Vacancy> savedVacancies = vacancyService.saveNewVacancies(vacancies, user, subscription);
+            vacancyService.saveNewVacancies(vacancies, user, subscription);
 
-            savedVacancies.stream()
+            vacancies.stream()
                     .limit(5)
                     .forEach(vacancy -> messageInterface.sendMessage(chatId, vacancy.toMessage()));
         }
