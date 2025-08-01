@@ -23,8 +23,10 @@ import java.util.List;
 public class TelegramBotController extends TelegramLongPollingBot implements MessageInterface {
 
     private final TelegramCommandService telegramCommandService;
+
     @Value("${telegram.bot.name}")
     private String botName;
+
     @Value("${telegram.bot.token}")
     private String botToken;
 
@@ -57,6 +59,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
         message.setText(text);
+        message.disableWebPagePreview();
 
         try {
             execute(message);

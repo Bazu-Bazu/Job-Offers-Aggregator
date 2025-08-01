@@ -115,7 +115,20 @@ public class TelegramCommandService {
 
                 messageInterface.sendMessage(chatId, message);
 
-                searchVacancy(chatId, query);
+                List<Vacancy> vacancies = vacancyService.searchVacancy(query, chatId);
+                if (vacancies.isEmpty()) {
+                    messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
+                }
+                else {
+                    StringBuilder response = new StringBuilder("\uD83D\uDE04Вот что удалось найти по вашему запросу:\n\n");
+                    int index = 1;
+                    for (Vacancy vacancy : vacancies) {
+                        response.append(index).append(") ").append(vacancy.toMessage()).append("\n\n");
+                        index++;
+                    }
+
+                    messageInterface.sendMessage(chatId, response.toString());
+                }
 
                 return;
             }
@@ -127,38 +140,6 @@ public class TelegramCommandService {
         } catch (Exception e) {
             log.error("Error handling /subscribe command for chatId {}", chatId, e);
             throw new RuntimeException("Error handling /subscribe command", e);
-        }
-    }
-
-    private void searchVacancy(Long chatId, String query) {
-        String area = "1";
-
-        com.example.Job.Offers.Aggregator.model.User user = userRepository.findByTelegramId(chatId)
-                .orElseGet(() -> {
-                    com.example.Job.Offers.Aggregator.model.User newUser =
-                            new com.example.Job.Offers.Aggregator.model.User();
-                    newUser.setTelegramId(chatId);
-                    return userRepository.save(newUser);
-                });
-
-        Subscription subscription = subscriptionRepository.findByUserAndQuery(user, query)
-                .orElseGet(() -> {
-                    Subscription newSub = new Subscription();
-                    newSub.setUser(user);
-                    newSub.setQuery(query);
-                    return subscriptionRepository.save(newSub);
-                });
-
-        List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
-        if (vacancies.isEmpty()) {
-            messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
-        }
-        else {
-            vacancyService.saveNewVacancies(vacancies, user, subscription);
-
-            vacancies.stream()
-                    .limit(5)
-                    .forEach(vacancy -> messageInterface.sendMessage(chatId, vacancy.toMessage()));
         }
     }
 

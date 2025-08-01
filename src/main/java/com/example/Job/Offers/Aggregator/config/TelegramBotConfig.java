@@ -10,4 +10,15 @@ public class TelegramBotConfig {
     @Value("${telegram.bot.token}")
     private String botToken;
 
+    @Value("${telegram.bot.name}")
+    private String botName;
+
+    public String getBotToken() {
+        return botToken;
+    }
+
+    public String getBotName() {
+        return botName;
+    }
+
 }

@@ -1,31 +1,49 @@
 package com.example.Job.Offers.Aggregator.service;
 
+import com.example.Job.Offers.Aggregator.api.HhApiClient;
+import com.example.Job.Offers.Aggregator.api.MessageInterface;
 import com.example.Job.Offers.Aggregator.model.Subscription;
 import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.model.Vacancy;
+import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
+import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import com.example.Job.Offers.Aggregator.repository.VacancyRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 
 @Service
+@Slf4j
 public class VacancyService {
 
     private final VacancyRepository vacancyRepository;
+    private final UserRepository userRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final HhApiClient hhApiClient;
+    private final String area = "1";
+    private final MessageInterface messageInterface;
 
-    public VacancyService(VacancyRepository vacancyRepository) {
+    public VacancyService(VacancyRepository vacancyRepository, UserRepository userRepository,
+                          SubscriptionRepository subscriptionRepository, HhApiClient hhApiClient, MessageInterface messageInterface) {
         this.vacancyRepository = vacancyRepository;
+        this.userRepository = userRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.hhApiClient = hhApiClient;
+        this.messageInterface = messageInterface;
     }
 
     @Transactional
-    public List<Vacancy> saveNewVacancies(List<Vacancy> vacancies, User user, Subscription subscription) {
+    public void saveNewVacancies(List<Vacancy> vacancies, User user, Subscription subscription) {
         vacancies.forEach(v -> {
             if (v.getExternalId() == null) {
                 v.setExternalId(generateExternalId(v));
@@ -50,6 +68,18 @@ public class VacancyService {
         if (!newVacancies.isEmpty()) {
             vacancyRepository.saveAll(newVacancies);
         }
+    }
+
+    @Transactional
+    public List<Vacancy> searchVacancy(String query, Long chatId) {
+        com.example.Job.Offers.Aggregator.model.User user = userRepository.findByTelegramId(chatId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Subscription subscription = subscriptionRepository.findByUserAndQuery(user, query)
+                .orElseThrow(() -> new RuntimeException("Subscription not found"));
+
+        List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
+        saveNewVacancies(vacancies, user, subscription);
 
         return vacancies;
     }
@@ -58,4 +88,53 @@ public class VacancyService {
         return "gen-" + UUID.nameUUIDFromBytes(
                 (vacancy.getEmployer() + "-" + vacancy.getTitle()).getBytes(StandardCharsets.UTF_8));
     }
+
+    @Scheduled(cron = "0 0 10 * * ?")
+    @Transactional
+    public void sendDailyVacancies() {
+        Map<Subscription, List<User>> subscriptionUserMap = subscriptionRepository.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        subscription -> subscription,
+                        Collectors.mapping(Subscription::getUser, Collectors.toList())
+                ));
+
+        subscriptionUserMap.forEach((subscription, users) -> {
+            try {
+                String query = subscription.getQuery();
+
+                List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
+
+                if (!vacancies.isEmpty()) {
+                    users.forEach(user -> {
+                        saveNewVacancies(vacancies, user, subscription);
+                    });
+
+                    sendVacanciesToUsers(query, vacancies, users);
+                }
+            } catch (Exception e) {
+                log.error("Error processing subscription: {}", subscription.getId(), e);
+                throw new RuntimeException("Error processing subscription", e);
+            }
+        });
+
+    }
+
+    private void sendVacanciesToUsers(String query, List<Vacancy> newVacancies, List<User> users) {
+        String header = "🔔 Новые вакансии по запросу \"" + query + "\":\n\n";
+
+        users.forEach(user -> {
+            try {
+                String message = header + newVacancies.stream()
+                        .map(Vacancy::toMessage)
+                        .collect(Collectors.joining("\n\n"));
+
+                messageInterface.sendMessage(user.getTelegramId(), message);
+            } catch (Exception e) {
+                log.error("Failed to send vacancies to User {}", user.getTelegramId(), e);
+                throw new RuntimeException("Failed to send vacancies to User", e);
+            }
+        });
+    }
+
 }

@@ -12,11 +12,15 @@ import java.util.Optional;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
 
+    List<Subscription> findAll();
     List<Subscription> findByUser(User user);
+    Optional<Subscription> findByQuery(String query);
     Optional<Subscription> findByUserAndQuery(User user, String query);
+
     @Modifying
     @Query(value = "DELETE FROM subscriptions WHERE user_id = :userId AND search_query = :query", nativeQuery = true)
     void deleteByUserIdAndQuery(Long userId, String query);
+
     @Modifying
     @Query(value = "DELETE FROM subscriptions WHERE user_id = :userId", nativeQuery = true)
     void deleteByUserId(Long userId);

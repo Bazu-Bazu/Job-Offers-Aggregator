@@ -11,6 +11,7 @@ public class HhVacancyDto {
 
     @JsonProperty("alternate_url")
     private String url;
+
     private String name;
     private HhSalaryDto salary;
     private HhEmployerDto employer;

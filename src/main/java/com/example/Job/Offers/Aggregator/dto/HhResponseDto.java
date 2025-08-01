@@ -25,4 +25,5 @@ public class HhResponseDto {
     public void setItems(List<HhVacancyDto> items) {
         this.items = items;
     }
+
 }
