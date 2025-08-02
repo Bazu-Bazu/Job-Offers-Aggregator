@@ -66,14 +66,15 @@ public class HhApiClient {
     private List<Vacancy> filterPopularVacancies(List<HhVacancyDto> items, String query) {
         return items.stream()
                 .filter(Objects::nonNull)
+                .filter(v -> v.getName() != null)
                 .sorted(Comparator
-                        .comparing((HhVacancyDto v) ->
+                        .comparingInt((HhVacancyDto v) ->
+                                calculateRelevanceScore(v.getName(), query.toLowerCase()))
+                        .reversed()
+                        .thenComparing(v ->
                                 Optional.ofNullable(v.getSalary())
                                         .map(HhSalaryDto::getFrom)
                                         .orElse(0),
-                                Comparator.reverseOrder())
-                        .thenComparing(v ->
-                                calculateRelevanceScore(v.getName(), query.toLowerCase()),
                                 Comparator.reverseOrder())
                 )
                 .limit(50)
@@ -82,17 +83,28 @@ public class HhApiClient {
     }
 
     private int calculateRelevanceScore(String title, String query) {
-        if (title == null) {
-            return 0;
-        }
-
-        int score = 0;
-
         if (title.toLowerCase().equals(query)) {
-            score += 100;
+            return 1000;
         }
+
+        if (title.toLowerCase().contains(" " + query + " ")) {
+            return  500;
+        }
+
+        String[] queryWords = query.split(" ");
+        String[] titleWords = title.toLowerCase().split(" ");
+
+        long matchedWords = Arrays.stream(queryWords)
+                .filter(q -> Arrays.asList(titleWords).contains(q))
+                .count();
+
+        int score = (int) (matchedWords * 100 / queryWords.length);
 
         if (title.toLowerCase().startsWith(query)) {
+            score += 80;
+        }
+
+        if (title.toLowerCase().contains(query)) {
             score += 50;
         }
 

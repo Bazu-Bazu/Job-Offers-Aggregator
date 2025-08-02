@@ -18,9 +18,6 @@ public interface VacancyRepository extends JpaRepository<Vacancy, Long> {
 
     Set<Vacancy> findByUserAndSubscription(User user, Subscription subscription);
 
-    @Query("SELECT v.externalId FROM Vacancy v WHERE v.externalId IN :externalIds")
-    Set<String> findExistingExternalIds(@Param("externalIds") Set<String> externalIds);
-
     @Query("SELECT v.externalId FROM Vacancy v WHERE v.user = :user AND v.subscription = :subscription")
     Set<String> findExternalIdsByUserAndSubscription(@Param("user") User user,
                                                      @Param("subscription") Subscription subscription);
