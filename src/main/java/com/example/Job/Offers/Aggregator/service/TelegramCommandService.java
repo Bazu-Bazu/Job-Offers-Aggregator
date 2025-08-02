@@ -24,20 +24,15 @@ public class TelegramCommandService {
     private final SubscriptionService subscriptionService;
     private final UserService userService;
     private final VacancyService vacancyService;
-    private final HhApiClient hhApiClient;
-    private final SubscriptionRepository subscriptionRepository;
 
     @Autowired
     public TelegramCommandService(MessageInterface messageInterface, UserRepository userRepository,
-                                  SubscriptionService subscriptionService, HhApiClient hhApiClient,
-                                  VacancyService vacancyService, SubscriptionRepository subscriptionRepository,
+                                  SubscriptionService subscriptionService, VacancyService vacancyService,
                                   UserService userService) {
         this.messageInterface = messageInterface;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
         this.vacancyService = vacancyService;
-        this.hhApiClient = hhApiClient;
-        this.subscriptionRepository = subscriptionRepository;
         this.userService = userService;
     }
 
@@ -115,12 +110,17 @@ public class TelegramCommandService {
 
                 messageInterface.sendMessage(chatId, message);
 
-                List<Vacancy> vacancies = vacancyService.searchVacancy(query, chatId);
+                List<Vacancy> vacancies = vacancyService.searchVacancyAfterSubscribing(query, chatId)
+                        .stream()
+                        .limit(5)
+                        .toList();
+
                 if (vacancies.isEmpty()) {
                     messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
                 }
                 else {
-                    StringBuilder response = new StringBuilder("\uD83D\uDE04Вот что удалось найти по вашему запросу:\n\n");
+                    StringBuilder response =
+                            new StringBuilder("\uD83D\uDE04Вот что удалось найти по вашему запросу:\n\n");
                     int index = 1;
                     for (Vacancy vacancy : vacancies) {
                         response.append(index).append(") ").append(vacancy.toMessage()).append("\n\n");

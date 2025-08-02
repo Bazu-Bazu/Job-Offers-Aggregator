@@ -76,7 +76,7 @@ public class HhApiClient {
                                 calculateRelevanceScore(v.getName(), query.toLowerCase()),
                                 Comparator.reverseOrder())
                 )
-                .limit(5)
+                .limit(50)
                 .map(this::mapToVacancy)
                 .collect(Collectors.toList());
     }

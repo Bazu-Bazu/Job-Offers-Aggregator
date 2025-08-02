@@ -71,7 +71,7 @@ public class VacancyService {
     }
 
     @Transactional
-    public List<Vacancy> searchVacancy(String query, Long chatId) {
+    public List<Vacancy> searchVacancyAfterSubscribing(String query, Long chatId) {
         com.example.Job.Offers.Aggregator.model.User user = userRepository.findByTelegramId(chatId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -79,8 +79,7 @@ public class VacancyService {
                 .orElseThrow(() -> new RuntimeException("Subscription not found"));
 
         List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
-        saveNewVacancies(vacancies, user, subscription);
-
+        saveNewVacancies(vacancies.stream().limit(5).toList(), user, subscription);
         return vacancies;
     }
 
@@ -89,7 +88,7 @@ public class VacancyService {
                 (vacancy.getEmployer() + "-" + vacancy.getTitle()).getBytes(StandardCharsets.UTF_8));
     }
 
-    @Scheduled(cron = "0 0 10 * * ?")
+    @Scheduled(cron = "0 00 10 * * ?")
     @Transactional
     public void sendDailyVacancies() {
         Map<Subscription, List<User>> subscriptionUserMap = subscriptionRepository.findAll()
@@ -103,28 +102,33 @@ public class VacancyService {
             try {
                 String query = subscription.getQuery();
 
-                List<Vacancy> vacancies = hhApiClient.searchVacancies(query, area);
+                List<Vacancy> freshVacancies = hhApiClient.searchVacancies(query, area);
 
-                if (!vacancies.isEmpty()) {
+                if (!freshVacancies.isEmpty()) {
+                    freshVacancies.forEach(v -> v.setExternalId(generateExternalId(v)));
+
                     users.forEach(user -> {
-                        saveNewVacancies(vacancies, user, subscription);
-                    });
+                        List<Vacancy> userNewVacancies = filterNewVacancies(freshVacancies, user, subscription).
+                                stream()
+                                .limit(5)
+                                .toList();
 
-                    sendVacanciesToUsers(query, vacancies, users);
+                        if (!userNewVacancies.isEmpty()) {
+                            saveNewVacancies(userNewVacancies, user, subscription);
+                            sendVacanciesToUsers(query, userNewVacancies, user);
+                        }
+                    });
                 }
             } catch (Exception e) {
                 log.error("Error processing subscription: {}", subscription.getId(), e);
                 throw new RuntimeException("Error processing subscription", e);
             }
         });
-
     }
 
-    private void sendVacanciesToUsers(String query, List<Vacancy> newVacancies, List<User> users) {
-        String header = "🔔 Новые вакансии по запросу \"" + query + "\":\n\n";
-
-        users.forEach(user -> {
+    private void sendVacanciesToUsers(String query, List<Vacancy> newVacancies, User user) {
             try {
+                String header = "🔔 Новые вакансии по запросу \"" + query + "\":\n\n";
                 String message = header + newVacancies.stream()
                         .map(Vacancy::toMessage)
                         .collect(Collectors.joining("\n\n"));
@@ -134,7 +138,14 @@ public class VacancyService {
                 log.error("Failed to send vacancies to User {}", user.getTelegramId(), e);
                 throw new RuntimeException("Failed to send vacancies to User", e);
             }
-        });
+    }
+
+    private List<Vacancy> filterNewVacancies(List<Vacancy> vacancies, User user, Subscription subscription) {
+        Set<String> existingVacancies = vacancyRepository.findExternalIdsByUserAndSubscription(user, subscription);
+
+        return vacancies.stream()
+                .filter(v -> !existingVacancies.contains(v.getExternalId()))
+                .toList();
     }
 
 }
