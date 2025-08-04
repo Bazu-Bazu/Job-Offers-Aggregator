@@ -16,16 +16,16 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public User saveNewUser(Long chatId, org.telegram.telegrambots.meta.api.objects.User telegramUser) {
+    public User saveNewUser(Long telegramId, org.telegram.telegrambots.meta.api.objects.User telegramUser) {
         try {
             User newUser = new User();
-            newUser.setTelegramId(chatId);
+            newUser.setTelegramId(telegramId);
             newUser.setUsername(telegramUser.getUserName());
             userRepository.save(newUser);
 
             return newUser;
         } catch (Exception e) {
-            log.error("Failed saving a new user {}", chatId ,e);
+            log.error("Failed saving a new user {}", telegramId ,e);
             throw new RuntimeException("Failed saving a new user", e);
         }
     }

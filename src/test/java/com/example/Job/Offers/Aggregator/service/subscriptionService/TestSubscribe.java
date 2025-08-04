@@ -1,9 +1,10 @@
-package com.example.Job.Offers.Aggregator.service;
+package com.example.Job.Offers.Aggregator.service.subscriptionService;
 
 import com.example.Job.Offers.Aggregator.model.Subscription;
 import com.example.Job.Offers.Aggregator.model.User;
 import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
+import com.example.Job.Offers.Aggregator.service.SubscriptionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,11 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
-class TestSubscriptionService {
+public class TestSubscribe {
 
     @Mock
     private SubscriptionRepository subscriptionRepository;
@@ -34,6 +37,19 @@ class TestSubscriptionService {
 
     @Test
     void subscribe_shouldCreateNewSubscribeWhenNotExist() {
+        when(userRepository.findByTelegramId(testTelegramId))
+                .thenReturn(Optional.of(testUser));
+        when(subscriptionRepository.findByUserAndQuery(testUser, testQuery))
+                .thenReturn(Optional.empty());
+
+        boolean result = subscriptionService.subscribe(testTelegramId, testQuery);
+
+        assertTrue(result);
+        verify(subscriptionRepository).save(any());
+    }
+
+    @Test
+    void subscribe_shouldReturnTrueSubscriptionExists() {
         when(userRepository.findByTelegramId(testTelegramId))
                 .thenReturn(Optional.of(testUser));
         when(subscriptionRepository.findByUserAndQuery(testUser, testQuery))
@@ -66,4 +82,5 @@ class TestSubscriptionService {
 
         assertThrows(RuntimeException.class, () -> subscriptionService.subscribe(testTelegramId, testQuery));
     }
+
 }

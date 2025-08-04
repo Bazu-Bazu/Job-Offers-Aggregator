@@ -30,6 +30,11 @@ public class Subscription {
         this.vacancies = vacancies;
     }
 
+    public Subscription(User user, String query) {
+        this.user = user;
+        this.query = query;
+    }
+
     public Subscription() { }
 
     public Long getId() {

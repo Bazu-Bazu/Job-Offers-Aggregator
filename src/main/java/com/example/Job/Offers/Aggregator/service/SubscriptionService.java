@@ -52,7 +52,7 @@ public class SubscriptionService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (subscriptionRepository.findByUserAndQuery(user, query).isPresent()) {
-                subscriptionRepository.deleteByUserIdAndQuery(user.getId(), query);
+                subscriptionRepository.deleteByUserAndQuery(user.getId(), query);
                 return true;
             }
 
@@ -70,7 +70,7 @@ public class SubscriptionService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (!subscriptionRepository.findByUser(user).isEmpty()) {
-                subscriptionRepository.deleteByUserId(user.getId());
+                subscriptionRepository.deleteByUser(user.getId());
                 return true;
             }
 

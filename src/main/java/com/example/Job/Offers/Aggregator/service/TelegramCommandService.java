@@ -1,10 +1,7 @@
 package com.example.Job.Offers.Aggregator.service;
 
-import com.example.Job.Offers.Aggregator.api.HhApiClient;
 import com.example.Job.Offers.Aggregator.api.MessageInterface;
-import com.example.Job.Offers.Aggregator.model.Subscription;
 import com.example.Job.Offers.Aggregator.model.Vacancy;
-import com.example.Job.Offers.Aggregator.repository.SubscriptionRepository;
 import com.example.Job.Offers.Aggregator.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,19 +37,30 @@ public class TelegramCommandService {
         try {
             if (update.hasMessage() && update.getMessage().hasText()) {
                 String text = update.getMessage().getText();
-                Long chatId = update.getMessage().getChatId();
+                Long telegramId = update.getMessage().getChatId();
                 User telegramUser = update.getMessage().getFrom();
 
                 if (text.equals("/start")) {
-                    handleStartCommand(chatId, telegramUser);
+                    handleStartCommand(telegramId, telegramUser);
                 } else if (text.startsWith("/subscribe")) {
-                    handleSubscribeCommand(chatId, telegramUser, text);
+                    handleSubscribeCommand(telegramId, telegramUser, text);
                 } else if (text.equals("/list")) {
-                    handleListCommand(chatId, telegramUser.getId());
+                    handleListCommand(telegramId, telegramUser.getId());
                 } else if (text.equals("/unsubscribe_all")) {
-                    handleUnsubscribeAllCommand(chatId, telegramUser);
+                    handleUnsubscribeAllCommand(telegramId, telegramUser);
                 } else if (text.startsWith("/unsubscribe")) {
-                    handleUnsubscribeCommand(chatId, telegramUser, text);
+                    handleUnsubscribeCommand(telegramId, telegramUser, text);
+                } else {
+                    String message = """
+                            🤨К сожалению, я не понял ваш запрос. Для взаимодействия со мной 
+                            воспользуйтесь одной из следующих команд:
+                            
+                            /subscribe <запрос> - Подписаться на вакансии
+                            /unsubscribe <запрос> - Отписаться от вакансии
+                            /unsubscribe_all - Отписаться от всех вакансий
+                            /list - Показать мои подписки
+                            """;
+                    messageInterface.sendMessage(telegramId, message);
                 }
             }
         } catch (Exception e) {
@@ -64,10 +72,10 @@ public class TelegramCommandService {
         }
     }
 
-    private void handleStartCommand(Long chatId, User telegramUser) {
+    private void handleStartCommand(Long telegramId, User telegramUser) {
         try {
-            userRepository.findByTelegramId(chatId)
-                    .orElseGet(() -> userService.saveNewUser(chatId, telegramUser));
+            userRepository.findByTelegramId(telegramId)
+                    .orElseGet(() -> userService.saveNewUser(telegramId, telegramUser));
 
             String welcomeText = String.format("""
                     😀Привет, %s! Я бот для поиска вакансий. Вот что я умею:
@@ -78,14 +86,14 @@ public class TelegramCommandService {
                     /list - Показать мои подписки
                     """, telegramUser.getUserName());
 
-            messageInterface.sendMessage(chatId, welcomeText);
+            messageInterface.sendMessage(telegramId, welcomeText);
         } catch (Exception e) {
-            log.error("Error handling /start command for chatId {}", chatId, e);
+            log.error("Error handling /start command for chatId {}", telegramId, e);
             throw new RuntimeException("Error handling /start command", e);
         }
     }
 
-    private void handleSubscribeCommand(Long chatId, org.telegram.telegrambots.meta.api.objects.User telegramUser,
+    private void handleSubscribeCommand(Long telegramId, org.telegram.telegrambots.meta.api.objects.User telegramUser,
                                         String command) {
         try {
             String query = command.substring("/subscribe".length()).trim();
@@ -96,7 +104,7 @@ public class TelegramCommandService {
                         Например: /subscribe Java developer.
                         """;
 
-                messageInterface.sendMessage(chatId, message);
+                messageInterface.sendMessage(telegramId, message);
 
                 return;
             }
@@ -108,15 +116,15 @@ public class TelegramCommandService {
                         *%s*.
                         """, query);
 
-                messageInterface.sendMessage(chatId, message);
+                messageInterface.sendMessage(telegramId, message);
 
-                List<Vacancy> vacancies = vacancyService.searchVacancyAfterSubscribing(query, chatId)
+                List<Vacancy> vacancies = vacancyService.searchVacanciesAfterSubscribing(query, telegramId)
                         .stream()
                         .limit(5)
                         .toList();
 
                 if (vacancies.isEmpty()) {
-                    messageInterface.sendMessage(chatId, "😔По вашему запросу ничего не найдено.");
+                    messageInterface.sendMessage(telegramId, "😔По вашему запросу ничего не найдено.");
                 }
                 else {
                     StringBuilder response =
@@ -127,7 +135,7 @@ public class TelegramCommandService {
                         index++;
                     }
 
-                    messageInterface.sendMessage(chatId, response.toString());
+                    messageInterface.sendMessage(telegramId, response.toString());
                 }
 
                 return;
@@ -136,21 +144,21 @@ public class TelegramCommandService {
                     ❗Вы уже подписаны на эту вакансию.
                     Укажите другой запрос для подписки.""";
 
-            messageInterface.sendMessage(chatId, message);
+            messageInterface.sendMessage(telegramId, message);
         } catch (Exception e) {
-            log.error("Error handling /subscribe command for chatId {}", chatId, e);
+            log.error("Error handling /subscribe command for chatId {}", telegramId, e);
             throw new RuntimeException("Error handling /subscribe command", e);
         }
     }
 
-    private void handleListCommand(Long chatId, Long userId) {
+    private void handleListCommand(Long telegramId, Long userId) {
         try {
             List<String> subscriptions = subscriptionService.getUserSubscriptions(userId);
 
             if (subscriptions.isEmpty()) {
                 String message = "😔У вас пока нет активных подписок.";
 
-                messageInterface.sendMessage(chatId, message);
+                messageInterface.sendMessage(telegramId, message);
                 return;
             }
 
@@ -163,14 +171,14 @@ public class TelegramCommandService {
 
             response.append("\nДля отписки от конкретной вакансии используйте /unsubscribe <запрос>\n");
             response.append("\nДля отписки от всех вакансий используйте /unsubscribe_all");
-            messageInterface.sendMessage(chatId, response.toString());
+            messageInterface.sendMessage(telegramId, response.toString());
         } catch (Exception e) {
-            log.error("Error handling /list command for chatId {}", chatId, e);
+            log.error("Error handling /list command for chatId {}", telegramId, e);
             throw new RuntimeException("Error handling /list command", e);
         }
     }
 
-    private void handleUnsubscribeCommand(Long chatId, org.telegram.telegrambots.meta.api.objects.User telegramUser,
+    private void handleUnsubscribeCommand(Long telegramId, org.telegram.telegrambots.meta.api.objects.User telegramUser,
                                           String command) {
         try {
             String query = command.substring("/unsubscribe".length()).trim();
@@ -181,7 +189,7 @@ public class TelegramCommandService {
                         Например /unsubscribe Golang developer.
                         """;
 
-                messageInterface.sendMessage(chatId, message);
+                messageInterface.sendMessage(telegramId, message);
 
                 return;
             }
@@ -192,31 +200,31 @@ public class TelegramCommandService {
                     *%s*.
                     """, query);
 
-                messageInterface.sendMessage(chatId, message);
+                messageInterface.sendMessage(telegramId, message);
 
                 return;
             }
 
-            messageInterface.sendMessage(chatId, "❗У вас нет такой подписки.");
+            messageInterface.sendMessage(telegramId, "❗У вас нет такой подписки.");
 
         } catch (Exception e) {
-            log.error("Error handling /unsubscribe command for chatId {}", chatId, e);
+            log.error("Error handling /unsubscribe command for chatId {}", telegramId, e);
             throw new RuntimeException("Error handling /unsubscribe command", e);
         }
     }
 
-    private void handleUnsubscribeAllCommand(Long chatId,
+    private void handleUnsubscribeAllCommand(Long telegramId,
                                              org.telegram.telegrambots.meta.api.objects.User telegramUser) {
         try {
             if (subscriptionService.unsubscribeAll(telegramUser.getId())) {
-                messageInterface.sendMessage(chatId, "✅Вы успешно отписались от всех вакансий.");
+                messageInterface.sendMessage(telegramId, "✅Вы успешно отписались от всех вакансий.");
 
                 return;
             }
 
-            messageInterface.sendMessage(chatId, "❗У вас нет подписок.");
+            messageInterface.sendMessage(telegramId, "❗У вас нет подписок.");
         } catch (Exception e) {
-            log.error("Error handling /unsubscribeAll command for chatId {}", chatId, e);
+            log.error("Error handling /unsubscribeAll command for chatId {}", telegramId, e);
             throw new RuntimeException("Error handling /unsubscribeAll command", e);
         }
     }
