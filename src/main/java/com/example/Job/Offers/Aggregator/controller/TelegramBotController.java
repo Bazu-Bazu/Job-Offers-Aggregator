@@ -64,7 +64,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.error("Failed to send message to chat {} : {}", chatId, text, e);
+            log.error("Error sending message to chat {} : {}", chatId, text, e);
         }
     }
 
@@ -81,7 +81,7 @@ public class TelegramBotController extends TelegramLongPollingBot implements Mes
 
             execute(new SetMyCommands(commands, null, null));
         } catch (TelegramApiException e) {
-            log.error("Failed to initialized bot commands", e);
+            log.error("Error initializing bot commands", e);
         }
     }
 

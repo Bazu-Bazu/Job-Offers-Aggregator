@@ -152,8 +152,8 @@ public class VacancyService {
 
             messageInterface.sendMessage(user.getTelegramId(), message);
         } catch (Exception e) {
-            log.error("Failed to send vacancies to User {}", user.getTelegramId(), e);
-            throw new RuntimeException("Failed to send vacancies to User", e);
+            log.error("Error sending vacancies to User {}", user.getTelegramId(), e);
+            throw new RuntimeException("Error sending vacancies", e);
         }
     }
 

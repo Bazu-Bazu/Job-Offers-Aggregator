@@ -25,8 +25,8 @@ public class UserService {
 
             return newUser;
         } catch (Exception e) {
-            log.error("Failed saving a new user {}", telegramId ,e);
-            throw new RuntimeException("Failed saving a new user", e);
+            log.error("Error saving a new user {}", telegramId ,e);
+            throw new RuntimeException("Error saving a new user", e);
         }
     }
 

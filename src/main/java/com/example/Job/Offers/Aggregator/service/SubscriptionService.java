@@ -40,8 +40,8 @@ public class SubscriptionService {
 
             return false;
         } catch (Exception e) {
-            log.error("Failed to subscribe user {} to query '{}'", telegramId, query, e);
-            throw new RuntimeException("Subscription failed", e);
+            log.error("Error subscribing user {} to query '{}'", telegramId, query, e);
+            throw new RuntimeException("Error subscribing", e);
         }
     }
 
@@ -58,8 +58,8 @@ public class SubscriptionService {
 
             return false;
         } catch (Exception e) {
-            log.error("Failed to unsubscribe user {} from query '{}'", telegramId, query, e);
-            throw new RuntimeException("Unsubscription failed", e);
+            log.error("Error unsubscribing user {} from query '{}'", telegramId, query, e);
+            throw new RuntimeException("Error unsubscribing", e);
         }
     }
 
@@ -76,8 +76,8 @@ public class SubscriptionService {
 
             return false;
         } catch (Exception e) {
-            log.error("Failed to unsubscribeAll user {}", telegramId, e);
-            throw new RuntimeException("UnsubscriptionAll failed", e);
+            log.error("Error unsubscribing all subscriptions user {}", telegramId, e);
+            throw new RuntimeException("Error unsubscribing all subscriptions", e);
         }
     }
 
@@ -95,8 +95,8 @@ public class SubscriptionService {
                     .map(Subscription::getQuery)
                     .toList();
         } catch (Exception e) {
-            log.error("Failed to get subscriptions for user {}", telegramId, e);
-            throw new RuntimeException("Failed to get subscriptions", e);
+            log.error("Error getting subscriptions for user {}", telegramId, e);
+            throw new RuntimeException("Error getting subscriptions", e);
         }
     }
 
