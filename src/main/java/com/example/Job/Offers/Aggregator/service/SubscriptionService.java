@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -51,8 +52,10 @@ public class SubscriptionService {
             User user = userRepository.findByTelegramId(telegramId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (subscriptionRepository.findByUserAndQuery(user, query).isPresent()) {
-                subscriptionRepository.deleteByUserAndQuery(user.getId(), query);
+            Optional<Subscription> subscription = subscriptionRepository.findByUserAndQuery(user, query);
+
+            if (subscription.isPresent()) {
+                subscriptionRepository.delete(subscription.get());
                 return true;
             }
 
@@ -69,8 +72,10 @@ public class SubscriptionService {
             User user = userRepository.findByTelegramId(telegramId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (!subscriptionRepository.findByUser(user).isEmpty()) {
-                subscriptionRepository.deleteByUser(user.getId());
+            List<Subscription> subscriptions = subscriptionRepository.findByUser(user);
+
+            if (!subscriptions.isEmpty()) {
+                subscriptionRepository.deleteAll(subscriptions);
                 return true;
             }
 

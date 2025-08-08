@@ -102,7 +102,7 @@ public class VacancyService {
         }
     }
 
-    @Scheduled(cron = "0 22 01 * * ?")
+    @Scheduled(cron = "0 00 10 * * ?")
     @Transactional
     public void sendDailyVacancies() {
         Map<Subscription, List<User>> subscriptionUserMap = subscriptionRepository.findAll()

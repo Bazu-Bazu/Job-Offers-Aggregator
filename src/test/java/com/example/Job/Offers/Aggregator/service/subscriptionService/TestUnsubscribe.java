@@ -43,7 +43,7 @@ public class TestUnsubscribe {
         boolean result = subscriptionService.unsubscribe(testTelegramId, testQuery);
 
         assertTrue(result);
-        verify(subscriptionRepository).deleteByUserAndQuery(testUser.getId(), testQuery);
+        verify(subscriptionRepository).delete(any());
     }
 
     @Test

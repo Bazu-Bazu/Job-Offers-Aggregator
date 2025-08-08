@@ -36,15 +36,17 @@ public class TestUnsubscribeAll {
 
     @Test
     void unsubscribeAll_shouldReturnTrueWhenSubscriptionsExist() {
+        List<Subscription> subscriptions = List.of(new Subscription(), new Subscription());
+
         when(userRepository.findByTelegramId(testTelegramId))
                 .thenReturn(Optional.of(testUser));
         when(subscriptionRepository.findByUser(testUser))
-                .thenReturn(List.of(new Subscription(), new Subscription()));
+                .thenReturn(subscriptions);
 
         boolean result = subscriptionService.unsubscribeAll(testTelegramId);
 
         assertTrue(result);
-        verify(subscriptionRepository).deleteByUser(testUser.getId());
+        verify(subscriptionRepository).deleteAll(subscriptions);
     }
 
     @Test
